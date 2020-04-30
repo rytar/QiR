@@ -51,7 +51,7 @@ namespace parser {
                 | (qi::lit('(') >> expr[_val = phx::construct<ast::vdec<int>>(_1, phx::bind(&grammar::id_save, this))] >> qi::lit(')'))[_val = _1]
                 | variant[_val = phx::construct<ast::var_ref>(phx::bind(&grammar::var_save, this))];
             constant = qi::int_ | qi::bool_;
-            variant = *(qi::char_ - qi::lit(';'))[phx::push_back(phx::bind(&grammar::var_save, this), _1)];
+            variant = *(qi::char_ - qi::char_("+-*/%<>=!;"))[phx::push_back(phx::bind(&grammar::var_save, this), _1)];
         }
     };
 }

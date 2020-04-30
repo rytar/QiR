@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/Support/FileSystem.h"
@@ -38,7 +37,7 @@ int main(int argc, char **argv) {
         // FunctionCallee print_func = module->getOrInsertFunction("printf", print_type);
         // auto* format = builder.CreateGlobalStringPtr("%d\n");
 
-        assembly asm_obj(builder);
+        assembly asm_obj(module, builder);
 
         for(auto const& i : tree) {
             boost::apply_visitor(asm_obj, i);

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <memory>
+#include "llvm-c/Core.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
@@ -20,7 +22,7 @@ class assembly : public boost::static_visitor<Value*> {
     std::unordered_map<std::string, AllocaInst*> var_table;
 
     public:
-    assembly(IRBuilder<>& builder_): boost::static_visitor<Value*>(), builder(builder_) {}
+    assembly(std::unique_ptr<Module>& module, IRBuilder<>& builder_): boost::static_visitor<Value*>(), builder(builder_) {}
 
     Value* operator() (int value) {
         return ConstantInt::get(builder.getInt32Ty(), value);
