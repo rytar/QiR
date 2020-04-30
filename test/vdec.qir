@@ -1,2 +1,3 @@
 let variant: int = 3 + 2 * 4 - 1;
 let variant2: int = variant;
+let flag: bool = false;

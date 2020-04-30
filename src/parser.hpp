@@ -24,6 +24,7 @@ namespace parser {
             vdec = qi::lit("let") >> id >> qi::lit(':')
                 >> (
                     qi::lit("int") >> qi::lit('=') >> expr[_val = phx::construct<ast::vdec<int>>(_1, phx::bind(&grammar::id_save, this))]
+                    | qi::lit("bool") >> qi::lit('=') >> expr[_val = phx::construct<ast::vdec<bool>>(_1, phx::bind(&grammar::id_save, this))]
                 );
             id = *(qi::char_ - qi::lit(':'))[phx::push_back(phx::bind(&grammar::id_save, this), _1)];
             expr %= expr2[_val = _1]

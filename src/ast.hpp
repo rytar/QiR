@@ -27,6 +27,9 @@ namespace ast {
     template<typename T>
     struct vdec;
 
+    template<typename T>
+    struct fdec;
+
     template<typename Op>
     struct binary_op;
 
