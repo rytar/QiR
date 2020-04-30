@@ -23,6 +23,11 @@ class assembly : public boost::static_visitor<Value*> {
         return ConstantInt::get(builder.getInt32Ty(), value);
     }
 
+    Value* operator() (std::string value) {
+        std::cout << value << std::endl;
+        return 0;
+    }
+
     template<typename Op>
     Value* operator() (const ast::binary_op<Op>& op) {
         Value* lhs = boost::apply_visitor(*this, op.lhs);
@@ -31,37 +36,43 @@ class assembly : public boost::static_visitor<Value*> {
         return apply_op(op, lhs, rhs);
     }
 
-    Value* operator() (const ast::vdec& vdec) {
-        std::string type_ = vdec.type;
-        std::string name = vdec.id;
+    template<typename T>
+    Value* operator() (const ast::vdec<T>& vdec) {
         Value* val = boost::apply_visitor(*this, vdec.val);
-        Type* type;
-        if(type_ == "int") {
-            type = builder.getInt32Ty();
-        }
-        auto addr = builder.CreateAlloca(type, nullptr, name);
-        return builder.CreateStore(val, addr);
+        return apply_vdec(vdec, val, vdec.id);
     }
 
     private:
+    Value* apply_vdec(const ast::vdec<int>&, Value* val, std::string id) {
+        auto addr = builder.CreateAlloca(builder.getInt32Ty(), nullptr, id);
+        builder.CreateStore(val, addr);
+        return val;
+    }
+
     Value* apply_op(const ast::binary_op<ast::lt>&, Value* lhs, Value* rhs) {
         return builder.CreateICmpSLT(lhs, rhs);
     }
+
     Value* apply_op(const ast::binary_op<ast::lte>&, Value* lhs, Value* rhs) {
         return builder.CreateICmpSLE(lhs, rhs);
     }
+
     Value* apply_op(const ast::binary_op<ast::gt>&, Value* lhs, Value* rhs) {
         return builder.CreateICmpSGT(lhs, rhs);
     }
+
     Value* apply_op(const ast::binary_op<ast::gte>&, Value* lhs, Value* rhs) {
         return builder.CreateICmpSGE(lhs, rhs);
     }
+    
     Value* apply_op(const ast::binary_op<ast::eql>&, Value* lhs, Value* rhs) {
         return builder.CreateICmpEQ(lhs, rhs);
     }
+    
     Value* apply_op(const ast::binary_op<ast::neq>&, Value* lhs, Value* rhs) {
         return builder.CreateICmpNE(lhs, rhs);
     }
+    
     Value* apply_op(const ast::binary_op<ast::add>&, Value* lhs, Value* rhs) {
         return builder.CreateAdd(lhs, rhs);
     }

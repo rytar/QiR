@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     std::string buf;
     double result;
     parser::grammar<std::string::const_iterator> grammar;
-    std::vector<ast::expr> tree;
+    std::vector<ast::value> tree;
     int line = 0;
     if(argc >= 2 && split(argv[1], '.')[split(argv[1], '.').size() - 1] == "qir") {
         std::string filename = split(argv[1], '/')[split(argv[1], '/').size() - 1];
@@ -41,14 +41,19 @@ int main(int argc, char **argv) {
         assembly asm_obj(builder);
 
         for(auto const& i : tree) {
+            // boost::apply_visitor(asm_obj, i);
+
             std::vector<Value*> args = {
-                format,
-                boost::apply_visitor(asm_obj, i)
+                format, boost::apply_visitor(asm_obj, i)
             };
             builder.CreateCall(print_func, ArrayRef<Value*>(args));
         }
 
         builder.CreateRetVoid();
+
+        std::error_code errc;
+        raw_fd_ostream stream("output.ll", errc, sys::fs::OpenFlags::F_None);
+        module->print(stream, nullptr);
 
         InitializeAllTargetInfos();
         InitializeAllTargets();

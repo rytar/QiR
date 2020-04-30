@@ -11,22 +11,21 @@
 namespace parser {
 
     template<typename Iterator>
-    struct grammar : public qi::grammar<Iterator, std::vector<ast::expr>(), qi::space_type> {
+    struct grammar : public qi::grammar<Iterator, std::vector<ast::value>(), qi::space_type> {
         template<typename T>
         using rule = qi::rule<Iterator, T, qi::space_type>;
 
-        rule<ast::expr()> expr, expr2, expr3, expr4, constant, vdecb;
-        rule<std::vector<ast::expr>()> code;
-        rule<ast::vdec()> vdec;
-        rule<std::string()> id, type;
-        rule<std::tuple<std::string, std::string>()> vdecc;
+        rule<ast::value()> expr, expr2, expr3, expr4, constant, vdec, id;
+        rule<std::vector<ast::value>()> code;
+        std::string id_save;
 
         grammar() : grammar::base_type(code) {
-            // code = *(vdec >> qi::lit(';'));
-            // vdec = qi::lit("let") >> vdecc >> vdecb;
-            // vdecc = id >> qi::lit(':') >> type;
-            // vdecb = qi::lit('=') >> expr;
-            code = *(expr >> qi::lit(';'));
+            code %= *((expr | vdec) >> qi::lit(';'));
+            vdec = qi::lit("let") >> id >> qi::lit(':')
+                >> (
+                    qi::lit("int") >> qi::lit('=') >> expr[_val = phx::construct<ast::vdec<int>>(_1, phx::bind(&grammar::id_save, this))]
+                );
+            id = *(qi::char_ - qi::lit(':'))[phx::bind(&grammar::id_save, this) = _1];
             expr %= expr2[_val = _1]
                 >> *(
                     qi::lit('<') >> expr2[_val = phx::construct<ast::binary_op<ast::lt>>(_val, _1)]

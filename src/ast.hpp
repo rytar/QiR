@@ -1,7 +1,7 @@
 #ifndef QIRAST
 #define QIRAST
+#define BOOST_SPIRIT_USE_PHOENIX_V3 1
 
-#include <tuple>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/fusion/include/std_tuple.hpp>
@@ -24,12 +24,16 @@ namespace ast {
     struct div;
     struct mod;
 
+    template<typename T>
+    struct vdec;
+
     template<typename Op>
     struct binary_op;
 
-    using expr = boost::variant<
+    using value = boost::variant<
         int,
         bool,
+        boost::recursive_wrapper<vdec<int>>,
         boost::recursive_wrapper<binary_op<lt>>,
         boost::recursive_wrapper<binary_op<lte>>,
         boost::recursive_wrapper<binary_op<gt>>,
@@ -43,20 +47,25 @@ namespace ast {
         boost::recursive_wrapper<binary_op<mod>>
     >;
 
-    struct vdec {
-        std::string type;
-        std::string id;
-        expr val;
+    using stat = boost::variant<
+        std::string,
+        boost::recursive_wrapper<vdec<int>>
+    >;
 
-        vdec(const std::tuple<std::string, std::string>& t, const expr& val_) : type(std::get<1>(t)), id(std::get<0>(t)), val(val_) {}
+    template<typename T>
+    struct vdec {
+        value val;
+        std::string id;
+
+        vdec(const value& val_, const std::string& id_) : val(val_), id(id_) {}
     };
 
     template<typename Op>
     struct binary_op {
-        expr lhs;
-        expr rhs;
+        value lhs;
+        value rhs;
 
-        binary_op(const expr& lhs_, const expr& rhs_) : lhs(lhs_), rhs(rhs_) {}
+        binary_op(const value& lhs_, const value& rhs_) : lhs(lhs_), rhs(rhs_) {}
     };
 }
 
