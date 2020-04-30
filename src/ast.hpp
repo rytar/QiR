@@ -1,6 +1,7 @@
 #ifndef QIRAST
 #define QIRAST
 
+#include <tuple>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/fusion/include/std_tuple.hpp>
@@ -23,7 +24,6 @@ namespace ast {
     struct div;
     struct mod;
 
-
     template<typename Op>
     struct binary_op;
 
@@ -43,12 +43,20 @@ namespace ast {
         boost::recursive_wrapper<binary_op<mod>>
     >;
 
+    struct vdec {
+        std::string type;
+        std::string id;
+        expr val;
+
+        vdec(const std::tuple<std::string, std::string>& t, const expr& val_) : type(std::get<1>(t)), id(std::get<0>(t)), val(val_) {}
+    };
+
     template<typename Op>
     struct binary_op {
         expr lhs;
         expr rhs;
 
-        binary_op(expr const& lhs_, expr const& rhs_) : lhs(lhs_), rhs(rhs_) {}
+        binary_op(const expr& lhs_, const expr& rhs_) : lhs(lhs_), rhs(rhs_) {}
     };
 }
 

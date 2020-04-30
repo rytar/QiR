@@ -17,8 +17,7 @@ int main(int argc, char **argv) {
     std::string buf;
     double result;
     parser::grammar<std::string::const_iterator> grammar;
-    std::vector<ast::expr> asts;
-    ast::expr tree;
+    std::vector<ast::expr> tree;
     int line = 0;
     if(argc >= 2 && split(argv[1], '.')[split(argv[1], '.').size() - 1] == "qir") {
         std::string filename = split(argv[1], '/')[split(argv[1], '/').size() - 1];
@@ -26,9 +25,6 @@ int main(int argc, char **argv) {
         if(!qi::phrase_parse(code.begin(), code.end(), grammar, qi::space, tree)) {
             std::cout << argv[1] << ": " << line << "parse error" << std::endl;
             throw std::runtime_error("detected error");
-        }
-        else {
-            asts.push_back(tree);
         }
         
         LLVMContext context;
@@ -44,7 +40,7 @@ int main(int argc, char **argv) {
 
         assembly asm_obj(builder);
 
-        for(auto const& i : asts) {
+        for(auto const& i : tree) {
             std::vector<Value*> args = {
                 format,
                 boost::apply_visitor(asm_obj, i)
