@@ -15,17 +15,17 @@ namespace parser {
         template<typename T>
         using rule = qi::rule<Iterator, T, qi::space_type>;
 
-        rule<ast::value()> expr, expr2, expr3, expr4, constant, vdec, id;
+        rule<ast::value()> expr, expr2, expr3, expr4, constant, variant, vdec, id;
         rule<std::vector<ast::value>()> code;
-        std::string id_save;
+        std::string id_save, var_save;
 
         grammar() : grammar::base_type(code) {
-            code %= *((expr | vdec) >> qi::lit(';'));
+            code %= *((vdec[phx::bind(&grammar::id_save, this) = ""] | expr[phx::bind(&grammar::var_save, this) = ""]) >> qi::lit(';'));
             vdec = qi::lit("let") >> id >> qi::lit(':')
                 >> (
                     qi::lit("int") >> qi::lit('=') >> expr[_val = phx::construct<ast::vdec<int>>(_1, phx::bind(&grammar::id_save, this))]
                 );
-            id = *(qi::char_ - qi::lit(':'))[phx::bind(&grammar::id_save, this) = _1];
+            id = *(qi::char_ - qi::lit(':'))[phx::push_back(phx::bind(&grammar::id_save, this), _1)];
             expr %= expr2[_val = _1]
                 >> *(
                     qi::lit('<') >> expr2[_val = phx::construct<ast::binary_op<ast::lt>>(_val, _1)]
@@ -46,8 +46,11 @@ namespace parser {
                     | (qi::lit('/') >> expr4[_val = phx::construct<ast::binary_op<ast::div>>(_val, _1)])
                     | (qi::lit('%') >> expr4[_val = phx::construct<ast::binary_op<ast::mod>>(_val, _1)])
                 );
-            expr4 %= constant | (qi::lit('(') >> expr >> qi::lit(')'))[_val = _1];
+            expr4 %= constant
+                | (qi::lit('(') >> expr[_val = phx::construct<ast::vdec<int>>(_1, phx::bind(&grammar::id_save, this))] >> qi::lit(')'))[_val = _1]
+                | variant[_val = phx::construct<ast::var_ref>(phx::bind(&grammar::var_save, this))];
             constant = qi::int_ | qi::bool_;
+            variant = *(qi::char_ - qi::lit(';'))[phx::push_back(phx::bind(&grammar::var_save, this), _1)];
         }
     };
 }

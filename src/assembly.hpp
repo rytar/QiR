@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
@@ -16,6 +17,8 @@ class assembly : public boost::static_visitor<Value*> {
     
     IRBuilder<>& builder;
 
+    std::unordered_map<std::string, AllocaInst*> var_table;
+
     public:
     assembly(IRBuilder<>& builder_): boost::static_visitor<Value*>(), builder(builder_) {}
 
@@ -23,9 +26,12 @@ class assembly : public boost::static_visitor<Value*> {
         return ConstantInt::get(builder.getInt32Ty(), value);
     }
 
-    Value* operator() (std::string value) {
-        std::cout << value << std::endl;
-        return 0;
+    Value* operator() (bool value) {
+        return ConstantInt::get(builder.getInt1Ty(), value);
+    }
+
+    Value* operator() (const ast::var_ref& vr) {
+        return builder.CreateLoad(var_table[vr.id], vr.id);
     }
 
     template<typename Op>
@@ -46,6 +52,14 @@ class assembly : public boost::static_visitor<Value*> {
     Value* apply_vdec(const ast::vdec<int>&, Value* val, std::string id) {
         auto addr = builder.CreateAlloca(builder.getInt32Ty(), nullptr, id);
         builder.CreateStore(val, addr);
+        var_table[id] = addr;
+        return val;
+    }
+
+    Value* apply_vdec(const ast::vdec<bool>&, Value* val, std::string id) {
+        auto addr = builder.CreateAlloca(builder.getInt1Ty(), nullptr, id);
+        builder.CreateStore(val, addr);
+        var_table[id] = addr;
         return val;
     }
 

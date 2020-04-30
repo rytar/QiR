@@ -33,20 +33,20 @@ int main(int argc, char **argv) {
 
         make_function(context, module, builder, builder.getVoidTy(), "main");
 
-        std::vector<Type*> args = {builder.getInt8Ty()->getPointerTo()};
-        FunctionType* print_type = FunctionType::get(builder.getInt32Ty(), ArrayRef<Type*>(args), true);
-        FunctionCallee print_func = module->getOrInsertFunction("printf", print_type);
-        auto* format = builder.CreateGlobalStringPtr("%d\n");
+        // std::vector<Type*> args = {builder.getInt8Ty()->getPointerTo()};
+        // FunctionType* print_type = FunctionType::get(builder.getInt32Ty(), ArrayRef<Type*>(args), true);
+        // FunctionCallee print_func = module->getOrInsertFunction("printf", print_type);
+        // auto* format = builder.CreateGlobalStringPtr("%d\n");
 
         assembly asm_obj(builder);
 
         for(auto const& i : tree) {
-            // boost::apply_visitor(asm_obj, i);
+            boost::apply_visitor(asm_obj, i);
 
-            std::vector<Value*> args = {
-                format, boost::apply_visitor(asm_obj, i)
-            };
-            builder.CreateCall(print_func, ArrayRef<Value*>(args));
+            // std::vector<Value*> args = {
+            //     format, boost::apply_visitor(asm_obj, i)
+            // };
+            // builder.CreateCall(print_func, ArrayRef<Value*>(args));
         }
 
         builder.CreateRetVoid();

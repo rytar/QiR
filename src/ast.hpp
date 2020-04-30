@@ -30,10 +30,17 @@ namespace ast {
     template<typename Op>
     struct binary_op;
 
+    struct var_ref {
+        std::string id;
+
+        var_ref(const std::string& id_) : id(id_) {}
+    };
+
     using value = boost::variant<
         int,
         bool,
         boost::recursive_wrapper<vdec<int>>,
+        boost::recursive_wrapper<vdec<bool>>,
         boost::recursive_wrapper<binary_op<lt>>,
         boost::recursive_wrapper<binary_op<lte>>,
         boost::recursive_wrapper<binary_op<gt>>,
@@ -44,12 +51,8 @@ namespace ast {
         boost::recursive_wrapper<binary_op<sub>>,
         boost::recursive_wrapper<binary_op<mul>>,
         boost::recursive_wrapper<binary_op<div>>,
-        boost::recursive_wrapper<binary_op<mod>>
-    >;
-
-    using stat = boost::variant<
-        std::string,
-        boost::recursive_wrapper<vdec<int>>
+        boost::recursive_wrapper<binary_op<mod>>,
+        boost::recursive_wrapper<var_ref>
     >;
 
     template<typename T>

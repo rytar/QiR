@@ -1,2 +1,2 @@
-let a: int = 3 + 2 * 4 - 1;
-let b: int = 0;
+let variant: int = 3 + 2 * 4 - 1;
+let variant2: int = variant;
