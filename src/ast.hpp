@@ -27,9 +27,6 @@ namespace ast {
     template<typename T>
     struct vdec;
 
-    template<typename T>
-    struct fdec;
-
     template<typename Op>
     struct binary_op;
 
@@ -38,6 +35,8 @@ namespace ast {
 
         var_ref(const std::string& id_) : id(id_) {}
     };
+
+    struct assign;
 
     using value = boost::variant<
         int,
@@ -55,15 +54,16 @@ namespace ast {
         boost::recursive_wrapper<binary_op<mul>>,
         boost::recursive_wrapper<binary_op<div>>,
         boost::recursive_wrapper<binary_op<mod>>,
-        boost::recursive_wrapper<var_ref>
+        boost::recursive_wrapper<var_ref>,
+        boost::recursive_wrapper<assign>
     >;
 
     template<typename T>
     struct vdec {
-        value val;
         std::string id;
+        value val;
 
-        vdec(const value& val_, const std::string& id_) : val(val_), id(id_) {}
+        vdec(std::string& id_, const value& val_) : id(id_), val(val_) {}
     };
 
     template<typename Op>
@@ -72,6 +72,13 @@ namespace ast {
         value rhs;
 
         binary_op(const value& lhs_, const value& rhs_) : lhs(lhs_), rhs(rhs_) {}
+    };
+
+    struct assign {
+        std::string id;
+        value val;
+
+        assign(std::string& id_, const value& val_) : id(id_), val(val_) {}
     };
 }
 

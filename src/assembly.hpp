@@ -36,6 +36,12 @@ class assembly : public boost::static_visitor<Value*> {
         return builder.CreateLoad(var_table[vr.id], vr.id);
     }
 
+    Value* operator() (const ast::assign& as) {
+        Value* val = boost::apply_visitor(*this, as.val);
+        builder.CreateStore(val, var_table[as.id]);
+        return val;
+    }
+
     template<typename Op>
     Value* operator() (const ast::binary_op<Op>& op) {
         Value* lhs = boost::apply_visitor(*this, op.lhs);

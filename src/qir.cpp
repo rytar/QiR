@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
         pass.run(*module);
         dest.flush();
 
-        char cmd[512] = "gcc ";
+        char cmd[512] = "gcc -O3 ";
         for(int i = 2; i < argc; i++) {
             strcat(cmd, argv[i]);
             strcat(cmd, " ");
