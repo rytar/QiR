@@ -15,23 +15,26 @@ namespace parser {
         template<typename T>
         using rule = qi::rule<Iterator, T, qi::space_type>;
 
-        rule<ast::value()> expr, expr2, expr3, expr4, constant, variant, vdec, vid, id, assign;
-        rule<std::vector<ast::value>()> code;
+        rule<ast::value()> expr, expr2, expr3, expr4, constant, variant, vdec, vid, id, assign, ifstat;
+        rule<std::vector<ast::value>()> stat;
         std::string id_save, vdec_id;
 
-        grammar() : grammar::base_type(code) {
-            code %= *(
-                (vdec[phx::bind(&grammar::id_save, this) = phx::bind(&grammar::vdec_id, this) = ""]
-                | assign[phx::bind(&grammar::id_save, this) = phx::bind(&grammar::vdec_id, this) = ""]
-                | expr[phx::bind(&grammar::id_save, this) = phx::bind(&grammar::vdec_id, this) = ""]
+        grammar() : grammar::base_type(stat) {
+            stat %= *(qi::lit('{') >> stat
+                | ifstat[phx::bind(&grammar::id_save, this) = phx::bind(&grammar::vdec_id, this) = ""]
+                >> (qi::lit('}') | qi::lit(';'))
+                | (
+                    vdec[phx::bind(&grammar::id_save, this) = phx::bind(&grammar::vdec_id, this) = ""]
+                    | assign[phx::bind(&grammar::id_save, this) = phx::bind(&grammar::vdec_id, this) = ""]
                 ) >> qi::lit(';'));
+            ifstat %= qi::lit("if") >> expr[_val = _1] >> stat[_val = phx::construct<ast::ifstat>(_val, _1, std::vector<ast::value>())];
             vdec = qi::lit("let") >> vid >> qi::lit(':')
                 >> (
                     qi::lit("int") >> qi::lit('=') >> expr[_val = phx::construct<ast::vdec<int>>(phx::bind(&grammar::vdec_id, this), _1)]
                     | qi::lit("bool") >> qi::lit('=') >> expr[_val = phx::construct<ast::vdec<bool>>(phx::bind(&grammar::vdec_id, this), _1)]
                 )[phx::bind(&grammar::vdec_id, this) = ""];
             assign = vid >> qi::lit('=') >> expr[_val = phx::construct<ast::assign>(phx::bind(&grammar::vdec_id, this), _1)][phx::bind(&grammar::vdec_id, this) = ""];
-            vid = *(qi::char_ - qi::char_("=:;"))[phx::push_back(phx::bind(&grammar::vdec_id, this), _1)];
+            vid = *(qi::char_ - qi::char_("=:;{}"))[phx::push_back(phx::bind(&grammar::vdec_id, this), _1)];
             expr %= expr2[_val = _1]
                 >> *(
                     qi::lit('<') >> expr2[_val = phx::construct<ast::binary_op<ast::lt>>(_val, _1)]
@@ -41,7 +44,11 @@ namespace parser {
                     | qi::lit("==") >> expr2[_val = phx::construct<ast::binary_op<ast::eql>>(_val, _1)]
                     | qi::lit("!=") >> expr2[_val = phx::construct<ast::binary_op<ast::neq>>(_val, _1)]
                 );
-            expr2 %= expr3[_val = _1]
+            expr2 %= (
+                    qi::lit('+') >> expr3[_val = _1]
+                    | qi::lit('-') >> expr3[_val = phx::construct<ast::binary_op<ast::sub>>(0, _1)]
+                    | expr3[_val = _1]
+                )
                 >> *(
                     qi::lit('+') >> expr3[_val = phx::construct<ast::binary_op<ast::add>>(_val, _1)]
                     | qi::lit('-') >> expr3[_val = phx::construct<ast::binary_op<ast::sub>>(_val, _1)]
@@ -56,7 +63,7 @@ namespace parser {
                 | (qi::lit('(') >> expr >> qi::lit(')'))[_val = _1]
                 | id[_val = phx::construct<ast::var_ref>(phx::bind(&grammar::id_save, this))][phx::bind(&grammar::id_save, this) = ""];
             constant = qi::int_ | qi::bool_;
-            id = *(qi::char_ - qi::char_('+') - qi::char_("-*/%<>!=:;"))[phx::push_back(phx::bind(&grammar::id_save, this), _1)];
+            id = *(qi::char_ - qi::char_("+-*/%") - qi::char_("<>!=:;{}"))[phx::push_back(phx::bind(&grammar::id_save, this), _1)];
         }
     };
 }

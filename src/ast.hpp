@@ -2,6 +2,7 @@
 #define QIRAST
 #define BOOST_SPIRIT_USE_PHOENIX_V3 1
 
+#include <vector>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/fusion/include/std_tuple.hpp>
@@ -24,11 +25,16 @@ namespace ast {
     struct div;
     struct mod;
 
+    struct ifstat;
+
     template<typename T>
     struct vdec;
 
     template<typename Op>
     struct binary_op;
+
+    template<typename T>
+    struct unary_op;
 
     struct var_ref {
         std::string id;
@@ -41,6 +47,7 @@ namespace ast {
     using value = boost::variant<
         int,
         bool,
+        boost::recursive_wrapper<ifstat>,
         boost::recursive_wrapper<vdec<int>>,
         boost::recursive_wrapper<vdec<bool>>,
         boost::recursive_wrapper<binary_op<lt>>,
@@ -58,6 +65,15 @@ namespace ast {
         boost::recursive_wrapper<assign>
     >;
 
+    struct ifstat {
+        value cond;
+        std::vector<value> then_stat;
+        std::vector<value> else_stat;
+
+        ifstat(const value& cond_, const std::vector<value>& then_stat_, const std::vector<value>& else_stat_)
+            : cond(cond_), then_stat(then_stat_), else_stat(else_stat_) {}
+    };
+
     template<typename T>
     struct vdec {
         std::string id;
@@ -72,6 +88,13 @@ namespace ast {
         value rhs;
 
         binary_op(const value& lhs_, const value& rhs_) : lhs(lhs_), rhs(rhs_) {}
+    };
+
+    template<typename T>
+    struct unary_op {
+        value val;
+
+        unary_op(const value& val_) : val(val_) {}
     };
 
     struct assign {

@@ -1,5 +1,6 @@
-let variant: int = 1;
-let variant2: int = variant + 2;
-let variant3: int = variant + variant2;
-variant = variant + variant2 + variant3;
-let flag: bool = false;
+let a: int = 0;
+if(true) {
+    a = 1;
+    let b: int = 1;
+}
+a = 2;

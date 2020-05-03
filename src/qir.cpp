@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "llvm/IR/LegacyPassManager.h"
+#include <llvm/IR/Verifier.h>
 #include "llvm/ADT/Optional.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -22,7 +23,7 @@ int main(int argc, char **argv) {
         std::string filename = split(argv[1], '/')[split(argv[1], '/').size() - 1];
         auto const code = read_file(argv[1]);
         if(!qi::phrase_parse(code.begin(), code.end(), grammar, qi::space, tree)) {
-            std::cout << argv[1] << ": " << line << "parse error" << std::endl;
+            std::cout << argv[1] << ": parse error" << std::endl;
             throw std::runtime_error("detected error");
         }
         
@@ -37,7 +38,7 @@ int main(int argc, char **argv) {
         // FunctionCallee print_func = module->getOrInsertFunction("printf", print_type);
         // auto* format = builder.CreateGlobalStringPtr("%d\n");
 
-        assembly asm_obj(module, builder);
+        assembly asm_obj(context, builder);
 
         for(auto const& i : tree) {
             boost::apply_visitor(asm_obj, i);

@@ -17,33 +17,68 @@ using namespace llvm;
 
 class assembly : public boost::static_visitor<Value*> {
     
+    LLVMContext& context;
     IRBuilder<>& builder;
-
     std::unordered_map<std::string, AllocaInst*> var_table;
 
     public:
-    assembly(std::unique_ptr<Module>& module, IRBuilder<>& builder_): boost::static_visitor<Value*>(), builder(builder_) {}
+    assembly(LLVMContext& context_, IRBuilder<>& builder_): boost::static_visitor<Value*>(), context(context_), builder(builder_) {}
 
     Value* operator() (int value) {
+        // std::cout << "int: " << value << std::endl;
         return ConstantInt::get(builder.getInt32Ty(), value);
     }
 
     Value* operator() (bool value) {
+        // std::cout << "bool: " << value << std::endl;
         return ConstantInt::get(builder.getInt1Ty(), value);
     }
 
     Value* operator() (const ast::var_ref& vr) {
+        // std::cout << "var_ref: " << vr.id << std::endl;
         return builder.CreateLoad(var_table[vr.id], vr.id);
     }
 
     Value* operator() (const ast::assign& as) {
+        // std::cout << "assign: " << as.id << std::endl;
         Value* val = boost::apply_visitor(*this, as.val);
         builder.CreateStore(val, var_table[as.id]);
         return val;
     }
 
+    Value* operator() (const ast::ifstat& ifs) {
+        // std::cout << "ifstat" << std::endl;
+        Value* cond = boost::apply_visitor(*this, ifs.cond);
+        Function* func = builder.GetInsertBlock()->getParent();
+        BasicBlock* then_block = BasicBlock::Create(context, "then", func);
+        BasicBlock* else_block = BasicBlock::Create(context, "else", func);
+        BasicBlock* merge_block = BasicBlock::Create(context, "merge", func);
+        builder.CreateCondBr(cond, then_block, else_block);
+        builder.SetInsertPoint(then_block);
+        // std::cout << "then_block start" << std::endl;
+        if(ifs.then_stat.size() != 0) {
+            for(const auto& i : ifs.then_stat) {
+                boost::apply_visitor(*this, i);
+            }
+        }
+        // std::cout << "then_block end" << std::endl;
+        builder.CreateBr(merge_block);
+        builder.SetInsertPoint(else_block);
+        // std::cout << "else_block start" << std::endl;
+        if(ifs.else_stat.size() != 0) {
+            for(const auto& i : ifs.else_stat) {
+                boost::apply_visitor(*this, i);
+            }
+        }
+        // std::cout << "else_block end" << std::endl;
+        builder.CreateBr(merge_block);
+        builder.SetInsertPoint(merge_block);
+        return 0;
+    }
+
     template<typename Op>
     Value* operator() (const ast::binary_op<Op>& op) {
+        // std::cout << "binary_op" << std::endl;
         Value* lhs = boost::apply_visitor(*this, op.lhs);
         Value* rhs = boost::apply_visitor(*this, op.rhs);
 
@@ -58,6 +93,7 @@ class assembly : public boost::static_visitor<Value*> {
 
     private:
     Value* apply_vdec(const ast::vdec<int>&, Value* val, std::string id) {
+        // std::cout << "vdec<int>: " << id << std::endl;
         auto addr = builder.CreateAlloca(builder.getInt32Ty(), nullptr, id);
         builder.CreateStore(val, addr);
         var_table[id] = addr;
@@ -65,6 +101,7 @@ class assembly : public boost::static_visitor<Value*> {
     }
 
     Value* apply_vdec(const ast::vdec<bool>&, Value* val, std::string id) {
+        // std::cout << "vdec<bool>: " << id << std::endl;
         auto addr = builder.CreateAlloca(builder.getInt1Ty(), nullptr, id);
         builder.CreateStore(val, addr);
         var_table[id] = addr;
@@ -149,7 +186,7 @@ void make_function(LLVMContext& context, std::unique_ptr<Module>& module, IRBuil
         module.get()
     );
 
-    builder.SetInsertPoint(BasicBlock::Create(context, "", func));
+    builder.SetInsertPoint(BasicBlock::Create(context, "entry", func));
 }
 
 void make_function(LLVMContext& context, std::unique_ptr<Module>& module, IRBuilder<>& builder, Type* type, std::string name) {
@@ -160,7 +197,7 @@ void make_function(LLVMContext& context, std::unique_ptr<Module>& module, IRBuil
         module.get()
     );
 
-    builder.SetInsertPoint(BasicBlock::Create(context, "", func));
+    builder.SetInsertPoint(BasicBlock::Create(context, "entry", func));
 }
 
 #endif
